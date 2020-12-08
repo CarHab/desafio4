@@ -1,143 +1,111 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, FlatList,Button , View, ScrollView, TextInput} from 'react-native';
-import axios from 'axios'
+import { FlatList, TouchableOpacity, Text, View } from 'react-native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faHeart as heartRegular } from '@fortawesome/free-regular-svg-icons';
+import { faHeart as heartSolid } from '@fortawesome/free-solid-svg-icons';
 import LazyImage from '../../components/LazyImage';
-import { AsyncStorage } from 'react-native';
+import Video from '../../components/Video';
+import TwoComments from '../../components/TwoComments';
+import posts from '../../../posts.json';
+import authors from '../../../authors.json';
 
+import {
+  Container,
+  Post,
+  Header,
+  Avatar,
+  Name,
+  Description,
+  Loading,
+  LikeList,
+} from './styles';
 
-import { Container, Post, Header, Avatar, Name, Description, Loading } from './styles';
-
-export default function Feed() {
-  const [error, setError] = useState('');
+export default function Feed({ navigation }) {
   const [feed, setFeed] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [viewable, setViewable] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [text, setText] = useState('')
-  const [comentarios, setComentarios] = useState([])
-
-  const MAX_LENGTH = 250;
 
   async function loadPage(pageNumber = page, shouldRefresh = false) {
-    if (pageNumber === total) return;
-    if (loading) return;
+    try {
+      if (pageNumber === total) return;
+      if (loading) return;
 
-    setLoading(true);
-    //http://localhost:3000/feed?_expand=author&_limit=4&_page=1
-    //utilizar server.js no jsonserver
-    //https://5fa103ace21bab0016dfd97e.mockapi.io/api/v1/feed?page=1&limit=4
-    //utilizar o server2.js no www.mockapi.io
-    axios
-    .get(`https://5fa103ace21bab0016dfd97e.mockapi.io/api/v1/feed?page=${pageNumber}&limit=4`)
-    .then(response => {
-      const totalItems = response.headers["x-total-count"]
-      const data = response.data
-      //console.log(data)
-      setLoading(false)
-      setTotal(Math.floor(totalItems / 4));
+      setLoading(true);
+
+      setTimeout(() => {}, 1000);
+
+      let data = [];
+
+      for (let i = (pageNumber - 1) * 5; i < pageNumber * 5; i++) {
+        const author = authors.filter(item => item.id === posts[i].authorId);
+
+        data.push({
+          ...posts[i],
+          author: { ...author[0] },
+        });
+      }
+
+      setLoading(false);
+      setTotal(Math.floor(data.length / 5));
       setPage(pageNumber + 1);
+
       setFeed(shouldRefresh ? data : [...feed, ...data]);
-    })
-    .catch(err => {
-      setError(err.message);
-      setLoading(true)
-    })
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   async function refreshList() {
     setRefreshing(true);
-    
+
     await loadPage(1, true);
 
     setRefreshing(false);
   }
 
-  const onGet = (id) => {
-    try {
-
-      const value = AsyncStorage.getItem(id);
-
-      if (value !== null) {
-        // We have data!!
-        setComentarios(value)
-      } 
-    } catch (error) {
-      // Error saving data
-    }
-  }
-
-  const onSave = async (id) => {
-    try {
-      await AsyncStorage.setItem(id, text);
-      setComentarios([...comentarios, ...text])
-    } catch (error) {
-      // Error saving data
-    }
-  }
-
-    
-
   useEffect(() => {
-    loadPage()
+    loadPage();
   }, []);
 
- 
-
-  const renderItem = ({item}) => {
-    return (
-      <Post>
-            <Header>
-              <Avatar source={{ uri: item.author.avatar }} />
-              <Name>{item.author.name}</Name>
-            </Header>
-
-            <LazyImage
-              aspectRatio={item.aspectRatio} 
-              shouldLoad={viewable.includes(item.id)} 
-              smallSource={{ uri: item.small }}
-              source={{ uri: item.image }}
-            />
-
-            <Description>
-              <Name>{item.author.name}</Name> {item.description}
-            </Description>
-            <Description>
-              {comentarios}
-            </Description>
-           
-
-            <TextInput
-              multiline={true}
-              onChangeText={(text) => setText(text)}
-              placeholder={"Comentários"}
-              style={[styles.text]}
-              maxLength={MAX_LENGTH}
-              value={text}/>
-
-            <Button
-              title="Salvar"
-              onPress={() => onSave(String(item.id))}
-              accessibilityLabel="Salvar">
-            </Button>
-
-      </Post>
-    )
-  }
-  
   const handleViewableChanged = useCallback(({ changed }) => {
     setViewable(changed.map(({ item }) => item.id));
   }, []);
 
+  const handleLike = async (id, liked) => {
+    let data = feed;
+    data[id - 1].liked = !liked;
+
+    setFeed([...data]);
+  };
+
+  const printLikes = likes => {
+    if (likes.length === 0) return 'Ninguém curtiu ainda';
+
+    if (likes.length === 1) {
+      let fLikes = likes.join(', ');
+
+      fLikes = `Curtido por ${fLikes}`;
+
+      return fLikes;
+    }
+
+    if (likes.length > 1) {
+      let fLikes = likes.slice(0, 1).join(', ');
+
+      fLikes = `Curtido por ${fLikes} e outras pessoas`;
+
+      return fLikes;
+    }
+  };
+
   return (
     <Container>
       <FlatList
-        key="list"
         data={feed}
         keyExtractor={item => String(item.id)}
-        renderItem={renderItem}
-        ListFooterComponent={loading && <Loading />}
         onViewableItemsChanged={handleViewableChanged}
         viewabilityConfig={{
           viewAreaCoveragePercentThreshold: 10,
@@ -147,19 +115,83 @@ export default function Feed() {
         refreshing={refreshing}
         onEndReachedThreshold={0.1}
         onEndReached={() => loadPage()}
+        ListFooterComponent={!loading && <Loading />}
+        renderItem={({ item }) => (
+          <Post>
+            <Header>
+              <Avatar source={{ uri: item.author.avatar }} />
+              <Name>{item.author.name}</Name>
+            </Header>
+
+            {item.video ? (
+              <Video link={item.videoId} />
+            ) : (
+              <LazyImage
+                aspectRatio={item.aspectRatio}
+                shouldLoad={viewable.includes(item.id)}
+                smallSource={{ uri: item.small }}
+                source={{ uri: item.image }}
+              />
+            )}
+
+            <TouchableOpacity
+              onPress={() => {
+                handleLike(item.id, item.liked);
+              }}
+            >
+              {item.liked ? (
+                <FontAwesomeIcon
+                  style={{ marginTop: 15, marginLeft: 15 }}
+                  icon={heartSolid}
+                  color='#D85A65'
+                />
+              ) : (
+                <FontAwesomeIcon
+                  style={{ marginTop: 15, marginLeft: 15 }}
+                  icon={heartRegular}
+                />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                item.likes.length
+                  ? navigation.navigate('Likes', { likes: item.likes })
+                  : {}
+              }
+            >
+              <LikeList>
+                <Text>{printLikes(item.likes)}</Text>
+              </LikeList>
+            </TouchableOpacity>
+            <Description>
+              <Text style={{ fontWeight: 'bold' }}>{item.author.name} </Text>
+              {item.description}
+            </Description>
+            <TwoComments comments={item.comments} />
+            <View style={{ marginLeft: 15, marginTop: 5 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('Comentários', {
+                    comments: item.comments,
+                  });
+                }}
+              >
+                {item.comments.length > 0 ? (
+                  item.comments.length === 1 ? (
+                    <Text style={{ color: 'grey' }}>Ver 1 comentário</Text>
+                  ) : (
+                    <Text style={{ color: 'grey' }}>
+                      Ver todos os {item.comments.length} comentários
+                    </Text>
+                  )
+                ) : (
+                  <Text style={{ color: 'grey' }}>Nenhum comentário</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Post>
+        )}
       />
     </Container>
   );
 }
-
-const styles = StyleSheet.create(
-  {text: {
-    fontSize: 30,
-    lineHeight: 33,
-    color: "#333333",
-    padding: 16,
-    paddingTop: 16,
-    minHeight: 170,
-    borderTopWidth: 1,
-    borderColor: "rgba(212,211,211, 0.3)"
-}})

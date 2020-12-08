@@ -1,8 +1,6 @@
-import styled from 'styled-components/native';
+import styled from "styled-components/native";
 
-export const Container = styled.View`
-  
-`;
+export const Container = styled.View``;
 
 export const Post = styled.View`
   margin-top: 10px;
@@ -22,17 +20,22 @@ export const Avatar = styled.Image`
 `;
 
 export const Name = styled.Text`
-  font-weight: 600;
+  font-weight: bold;
 `;
 
 export const Description = styled.Text`
-  padding: 15px;
-  line-height: 18px;
+  padding: 10px;
+  line-height: 12px;
 `;
 
 export const Loading = styled.ActivityIndicator.attrs({
-  size: 'small',
-  color: '#999'
+  size: "small",
+  color: "#999",
 })`
   margin: 30px 0;
+`;
+
+export const LikeList = styled.Text`
+  margin-left: 10px;
+  margin-top: 5px;
 `;
