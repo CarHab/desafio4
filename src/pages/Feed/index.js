@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback,useRef } from 'react';
 import { FlatList, TouchableOpacity, Text, View } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHeart as heartRegular } from '@fortawesome/free-regular-svg-icons';
@@ -18,6 +18,7 @@ import {
   Description,
   Loading,
   LikeList,
+  AddComment
 } from './styles';
 
 export default function Feed({ navigation }) {
@@ -27,6 +28,22 @@ export default function Feed({ navigation }) {
   const [viewable, setViewable] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  const [list, setList] = useState('');
+  const [newComment, setNewComment] = useState('');
+  const textInput = useRef();
+
+  const handleComment = (comments) => {
+    const a = {
+      avatar: 'https://avatars0.githubusercontent.com/u/2254731?s=50&v=4',
+      name: 'dieegosf',
+      text: newComment,
+    };
+
+    comments = setList([...list, a]);
+
+    textInput.current.clear();
+  };
 
   async function loadPage(pageNumber = page, shouldRefresh = false) {
     try {
@@ -188,6 +205,15 @@ export default function Feed({ navigation }) {
                   <Text style={{ color: 'grey' }}>Nenhum comentário</Text>
                 )}
               </TouchableOpacity>
+
+              <AddComment
+                ref={textInput}
+                onChangeText={(value) => setNewComment(value)}
+                onSubmitEditing={() => handleComment(item.comments)}
+                placeholder='Adicione um comentário'
+                multiline={true}
+                blurOnSubmit={true}
+              />
             </View>
           </Post>
         )}
@@ -195,3 +221,4 @@ export default function Feed({ navigation }) {
     </Container>
   );
 }
+

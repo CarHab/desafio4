@@ -39,3 +39,9 @@ export const LikeList = styled.Text`
   margin-left: 10px;
   margin-top: 5px;
 `;
+
+export const AddComment = styled.TextInput`
+  margin: 10px;
+  margin-top: 10px;
+  font-size: 18px;
+`;
