@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback,useRef } from 'react';
-import { FlatList, TouchableOpacity, Text, View } from 'react-native';
+import { FlatList, TouchableOpacity, Text, View, Alert } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faHeart as heartRegular } from '@fortawesome/free-regular-svg-icons';
 import { faHeart as heartSolid } from '@fortawesome/free-solid-svg-icons';
@@ -29,18 +29,28 @@ export default function Feed({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  const [list, setList] = useState('');
+  
+  const [list, setList] = useState([]);
   const [newComment, setNewComment] = useState('');
   const textInput = useRef();
 
-  const handleComment = (comments) => {
+  const handleComment = id => {
     const a = {
       avatar: 'https://avatars0.githubusercontent.com/u/2254731?s=50&v=4',
       name: 'dieegosf',
       text: newComment,
     };
 
-    comments = setList([...list, a]);
+    const copia = feed;
+
+    for (let item of copia) {
+      if (id === item.id) {        
+        item.comments.push(a);
+        break;
+      }
+    }
+
+    setFeed(copia);
 
     textInput.current.clear();
   };
@@ -83,6 +93,7 @@ export default function Feed({ navigation }) {
     setRefreshing(false);
   }
 
+ 
   useEffect(() => {
     loadPage();
   }, []);
@@ -208,8 +219,8 @@ export default function Feed({ navigation }) {
 
               <AddComment
                 ref={textInput}
-                onChangeText={(value) => setNewComment(value)}
-                onSubmitEditing={() => handleComment(item.comments)}
+                onChangeText={value => setNewComment(value)}
+                onSubmitEditing={() => handleComment(item.id)}
                 placeholder='Adicione um comentário'
                 multiline={true}
                 blurOnSubmit={true}
